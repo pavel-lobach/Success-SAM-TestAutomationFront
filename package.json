@@ -1,0 +1,42 @@
+{
+  "name": "sam-test-automation-front",
+  "version": "1.0",
+  "description": "SAM Test Automation Front",
+  "engines": {
+    "node": "~22"
+  },
+  "scripts": {
+    "prepare": "command -v husky && husky || true",
+    "cfn": "cfn-include template.yaml > template.processed.json",
+    "build": "sam build -t template.processed.json",
+    "deploy": "npm run deploy:default --",
+    "deploy:y": "npm run deploy:default:y --",
+    "deploy:default": "npm run cfn && npm run build && sam deploy",
+    "deploy:default:y": "npm run deploy:default -- --no-confirm-changeset",
+    "deploy:prod": "npm run deploy:default -- --config-env production",
+    "deploy:prod:y": "npm run deploy:prod -- --no-confirm-changeset",
+    "deploy:ci": "npm run deploy:default --",
+    "deploy:assets": "BUCKET=$(aws cloudformation describe-stacks --stack-name TestAutomationFront --query \"Stacks[0].Outputs[?OutputKey=='TestAutomationResultsBucketName'].OutputValue\" --output text) && aws s3 sync ./assets/TestAutomationResults s3://$BUCKET/assets/ --delete",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,mjs}": [
+      "eslint"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "~9.39.1",
+    "@stylistic/eslint-plugin": "~5.6.1",
+    "@znemz/cfn-include": "~2.1.5",
+    "eslint": "~9.39.1",
+    "eslint-plugin-import": "~2.32.0",
+    "globals": "~16.5.0",
+    "husky": "~9.1.7",
+    "lint-staged": "~16.2.7"
+  },
+  "workspaces": [
+    "components/lambda-functions/*"
+  ]
+}

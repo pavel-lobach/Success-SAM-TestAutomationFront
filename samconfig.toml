@@ -1,0 +1,79 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+####################
+# default (local)
+#################### 
+
+[default]
+[default.global.parameters]
+stack_name = "SuccessTestAutomationFrontLOCAL"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "SuccessTestAutomationFrontLOCAL"
+disable_rollback = false
+image_repositories = []
+parameter_overrides = [
+]
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+####################
+# production
+#################### 
+
+[production]
+[production.global.parameters]
+stack_name = "TestAutomationFront" 
+
+[production.build.parameters]
+cached = true
+parallel = true
+
+[production.deploy]
+[production.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "TestAutomationFront"
+disable_rollback = false
+image_repositories = []
+parameter_overrides = [
+  "Env=production",
+]
+tags = [
+  "PaymentCategory=SAM Test Automation Front",
+]
+
+[production.package.parameters]
+resolve_s3 = true
+
+[production.sync.parameters]
+watch = true
+
+[production.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[production.local_start_lambda.parameters]
+warm_containers = "EAGER"

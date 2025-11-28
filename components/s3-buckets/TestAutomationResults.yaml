@@ -1,0 +1,29 @@
+# S3 Bucket
+TestAutomationResultsBucket:
+  Type: AWS::S3::Bucket
+  Properties:
+    AccessControl: Private
+    LifecycleConfiguration:
+      Rules:
+        - Id: "ExpireReports"
+          Prefix: "reports"
+          Status: "Enabled"
+          ExpirationInDays: 14
+
+# Bucket Policy
+TestAutomationResultsBucketPolicy:
+  Type: AWS::S3::BucketPolicy
+  Properties:
+    Bucket: !Ref TestAutomationResultsBucket
+    PolicyDocument:
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudfront.amazonaws.com
+          Action: s3:GetObject
+          Resource:
+            - !Sub "${TestAutomationResultsBucket.Arn}/assets/*"
+            - !Sub "${TestAutomationResultsBucket.Arn}/reports/*"
+          Condition:
+            StringEquals:
+              AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${TestAutomationResultsDistribution}"

@@ -1,0 +1,15 @@
+# SSM Param
+TestAutomationResultsBucketNameParam:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: /sam/shared/TestAutomationResultsBucketName
+    Type: String
+    Value: !Ref TestAutomationResultsBucket
+
+# SSM Param
+TestAutomationResultsWebsiteUrlParam:
+  Type: AWS::SSM::Parameter
+  Properties:
+    Name: /sam/shared/TestAutomationResultsWebsiteUrl
+    Type: String
+    Value: !Sub "https://${TestAutomationResultsDistribution.DomainName}"

@@ -1,0 +1,61 @@
+# Lambda FUNCTION
+TestAutomationResultsApiFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: ./components/lambda-functions/TestAutomationResultsApi
+    Handler: index.handler
+    Role: !GetAtt TestAutomationResultsApiRole.Arn
+    Timeout: 5
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Env
+        BUCKET_NAME: !Ref TestAutomationResultsBucket
+    Events:
+      ListReports:
+        Type: Api
+        Properties:
+          RestApiId: !Ref TestAutomationResultsApi
+          Path: /api/reports
+          Method: GET
+
+# Log Group
+TestAutomationResultsApiLogGroup:
+  Type: AWS::Logs::LogGroup
+  DependsOn: TestAutomationResultsApiFunction
+  Properties:
+    RetentionInDays: 14
+    LogGroupName:
+      !Join ["", ["/aws/lambda/", !Ref TestAutomationResultsApiFunction]]
+
+# Function Role
+TestAutomationResultsApiRole:
+  Type: "AWS::IAM::Role"
+  Properties:
+    AssumeRolePolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: "Allow"
+          Principal:
+            Service:
+              - "lambda.amazonaws.com"
+          Action:
+            - "sts:AssumeRole"
+    ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    Policies:
+      - PolicyName: "AllowAccessResources"
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub "arn:aws:s3:::${TestAutomationResultsBucket}/runs/*"
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource:
+                - !Sub "arn:aws:s3:::${TestAutomationResultsBucket}"

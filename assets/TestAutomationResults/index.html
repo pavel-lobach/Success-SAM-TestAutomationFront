@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Last QA Automation Reports</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 2px;
+    }
+
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    #spinner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .loader {
+      border: 4px solid #eee;
+      border-top: 4px solid #0066cc;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Reports</h1>
+  <div id="spinner">
+    <div class="loader"></div> <span>Loading reports...</span>
+  </div>
+
+  <ul id="report-list"></ul>
+</body>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const spinner = document.getElementById('spinner');
+    const ul = document.getElementById('report-list');
+    fetch('/api/reports')
+      .then(response => response.json())
+      .then(data => {
+        data.reports.forEach(function (item) {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = `/${item.Content['report-path']}`;
+          a.textContent = `${item.LastModified.split('T').shift()} - ${item.Content.status}`;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        spinner.style.display = 'none';
+      })
+      .catch(function (err) {
+        console.error('Error fetching reports:', err);
+        spinner.innerHTML = 'Failed to load reports';
+      });
+  });
+</script>
+
+</html>

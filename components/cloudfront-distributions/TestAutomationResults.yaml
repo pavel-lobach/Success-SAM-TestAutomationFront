@@ -1,0 +1,140 @@
+# CloudFront Distributon
+TestAutomationResultsDistribution:
+  Type: AWS::CloudFront::Distribution
+  Properties:
+    DistributionConfig:
+      Enabled: true
+      DefaultRootObject: index.html
+      # PriceClass: PriceClass_100
+      HttpVersion: http2and3
+
+      ViewerCertificate:
+        CloudFrontDefaultCertificate: true
+
+      Origins:
+        - Id: ApiOrigin
+          DomainName: !Sub "${TestAutomationResultsApi}.execute-api.${AWS::Region}.amazonaws.com"
+          OriginPath: /v1
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginSSLProtocols: ["TLSv1.2"]
+        - Id: S3AssetsOrigin
+          DomainName: !GetAtt TestAutomationResultsBucket.RegionalDomainName
+          OriginPath: /assets
+          OriginAccessControlId: !GetAtt TestAutomationResultsDistributionOAC.Id
+          S3OriginConfig: {}
+        - Id: S3ReportsOrigin
+          DomainName: !GetAtt TestAutomationResultsBucket.RegionalDomainName
+          # OriginPath: /reports
+          OriginAccessControlId: !GetAtt TestAutomationResultsDistributionOAC.Id
+          S3OriginConfig: {}
+
+      CacheBehaviors:
+        # /reports/* → S3 Reports Origin
+        - PathPattern: "/reports/*"
+          TargetOriginId: S3ReportsOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref TestAutomationResultsS3CachePolicy
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt TestAutomationResultsNoCacheFunction.FunctionARN
+
+        # /api/* → API Gateway Origin
+        - PathPattern: "/api/*"
+          TargetOriginId: ApiOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref TestAutomationResultsApiCachePolicy
+          OriginRequestPolicyId: "b689b0a8-53d0-40ab-baf2-68738e2966ac" # Managed-AllViewerExceptHostHeader
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt TestAutomationResultsNoCacheFunction.FunctionARN
+
+      DefaultCacheBehavior:
+        TargetOriginId: S3AssetsOrigin
+        ViewerProtocolPolicy: redirect-to-https
+        AllowedMethods: [GET, HEAD, OPTIONS]
+        CachedMethods: [GET, HEAD]
+        Compress: true
+        CachePolicyId: !Ref TestAutomationResultsS3CachePolicy
+        # OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3" # Managed-AllViewer
+
+TestAutomationResultsDistributionOAC:
+  Type: AWS::CloudFront::OriginAccessControl
+  Properties:
+    OriginAccessControlConfig:
+      Name: !Sub "${TestAutomationResultsBucket}-oac"
+      SigningBehavior: always
+      SigningProtocol: sigv4
+      OriginAccessControlOriginType: s3
+
+TestAutomationResultsApiCachePolicy:
+  Type: AWS::CloudFront::CachePolicy
+  Properties:
+    CachePolicyConfig:
+      Name: TestAutomationResultsApiCache
+      DefaultTTL: 60
+      MinTTL: 0
+      MaxTTL: 60
+      Comment: "Cache API responses for 60 seconds"
+      ParametersInCacheKeyAndForwardedToOrigin:
+        EnableAcceptEncodingGzip: true
+        EnableAcceptEncodingBrotli: true
+        CookiesConfig:
+          CookieBehavior: none
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            - Cache-Control
+        QueryStringsConfig:
+          QueryStringBehavior: all
+
+TestAutomationResultsS3CachePolicy:
+  Type: AWS::CloudFront::CachePolicy
+  Properties:
+    CachePolicyConfig:
+      Name: TestAutomationResultsS3Cache
+      DefaultTTL: 3600
+      MinTTL: 0
+      MaxTTL: 3600
+      Comment: "Cache S3 files for 10 minutes"
+      ParametersInCacheKeyAndForwardedToOrigin:
+        EnableAcceptEncodingGzip: true
+        EnableAcceptEncodingBrotli: true
+        CookiesConfig:
+          CookieBehavior: none
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            - Cache-Control
+        QueryStringsConfig:
+          QueryStringBehavior: all
+
+TestAutomationResultsNoCacheFunction:
+  Type: AWS::CloudFront::Function
+  Properties:
+    Name: test-automation-results-nocache2
+    AutoPublish: true
+    FunctionConfig:
+      Comment: "Adds cache-busting querystring on Ctrl+F5"
+      Runtime: cloudfront-js-2.0
+    FunctionCode: |
+      function handler(event) {
+        var qs = [];
+        for (var key in event.request.querystring) {
+          qs.push(key + "=" + event.request.querystring[key].value);
+        }
+        var cc = event.request.headers["cache-control"];
+        if (cc && cc.value.includes("no-cache")) {
+          qs.push("_nocahche=" + Date.now().toString());
+        }
+        event.request.querystring = qs.sort().join('&');
+        return event.request;
+      }

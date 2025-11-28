@@ -1,0 +1,13 @@
+# API Gateway
+TestAutomationResultsApi:
+  Type: AWS::Serverless::Api
+  Properties:
+    StageName: v1
+    # Auth:
+    #   DefaultAuthorizer: LambdaHmacAuthorizer
+    #   Authorizers:
+    #     LambdaHmacAuthorizer:
+    #       FunctionPayloadType: REQUEST
+    #       FunctionArn: !GetAtt HmacAuthorizerFunction.Arn
+    #       Identity:
+    #         ReauthorizeEvery: 0

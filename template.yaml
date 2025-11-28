@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Test Automation Front
+
+Parameters:
+  Env:
+    Type: String
+    Default: "development"
+  ProjectPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /sam/shared/ProjectPrefix
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+###############################################################
+
+Resources:
+  Fn::DeepMerge:
+    # API Gateways
+    - !Include components/api-gateways/TestAutomationResultsApi.yaml
+
+    # CloudFront Distributions
+    - !Include components/cloudfront-distributions/TestAutomationResults.yaml
+
+    # Lambda Functions
+    - !Include components/lambda-functions/TestAutomationResultsApi.yaml
+
+    # S3 Buckets
+    - !Include components/s3-buckets/TestAutomationResults.yaml
+
+    # SSM Parameters
+    - !Include components/ssm-parameters/shared.yaml
+
+  #############################################################
+
+Outputs:
+  TestAutomationResultsBucketName:
+    Description: "Name of TestAutomationResults bucket"
+    Value: !Ref TestAutomationResultsBucket
+
+  TestAutomationResultsWebsiteUrlParam:
+    Description: "URL to TestAutomationResults cloudfront"
+    Value: !Sub "https://${TestAutomationResultsDistribution.DomainName}"
