@@ -65,6 +65,9 @@ TestAutomationResultsDistribution:
         Compress: true
         CachePolicyId: !Ref TestAutomationResultsS3CachePolicy
         # OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3" # Managed-AllViewer
+        FunctionAssociations:
+          - EventType: viewer-request
+            FunctionARN: !GetAtt TestAutomationResultsNoCacheFunction.FunctionARN
 
 TestAutomationResultsDistributionOAC:
   Type: AWS::CloudFront::OriginAccessControl
@@ -127,14 +130,22 @@ TestAutomationResultsNoCacheFunction:
       Runtime: cloudfront-js-2.0
     FunctionCode: |
       function handler(event) {
+        // url rewrite
+        if (event.request.uri === "/reports" || event.request.uri === "/reports/") {
+          event.request.uri = "/index.html";
+        }
+
+        // sort query params to increase cashe hits
         var qs = [];
         for (var key in event.request.querystring) {
           qs.push(key + "=" + event.request.querystring[key].value);
         }
+        // pass random value to disable cache
         var cc = event.request.headers["cache-control"];
         if (cc && cc.value.includes("no-cache")) {
           qs.push("_nocahche=" + Date.now().toString());
         }
         event.request.querystring = qs.sort().join('&');
+
         return event.request;
       }

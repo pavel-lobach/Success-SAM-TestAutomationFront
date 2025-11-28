@@ -19,7 +19,6 @@ export default middy()
 
       const items = await Promise.all(
         (listObjectResponse.Contents || [])
-          .sort((a, b) => b.LastModified - a.LastModified)
           .map(async (item) => {
             const resp = await s3.send(new GetObjectCommand({ Bucket: process.env.BUCKET_NAME, Key: item.Key }));
             return {
@@ -30,10 +29,16 @@ export default middy()
           }),
       );
 
+      const itemsSorted = items.map((item) => ({
+        Date: item.Content['report-date'] || item.LastModified,
+        Name: (item.Content['report-date'] || item.LastModified).split('T').shift(),
+        ...item,
+      })).sort((a, b) => b.Date > a.Date ? 1 : -1);
+
       return {
         statusCode: 200,
         body: JSON.stringify({
-          reports: items,
+          reports: itemsSorted,
         }),
       };
     } catch (err) {
