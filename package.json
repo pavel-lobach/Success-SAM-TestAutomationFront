@@ -7,11 +7,12 @@
   },
   "scripts": {
     "prepare": "command -v husky && husky || true",
+    "resolve": "",
     "cfn": "cfn-include template.yaml > template.processed.json",
     "build": "sam build -t template.processed.json",
     "deploy": "npm run deploy:default --",
     "deploy:y": "npm run deploy:default:y --",
-    "deploy:default": "npm run cfn && npm run build && sam deploy",
+    "deploy:default": "npm run resolve && npm run cfn && npm run build && sam deploy",
     "deploy:default:y": "npm run deploy:default -- --no-confirm-changeset",
     "deploy:prod": "npm run deploy:default -- --config-env production",
     "deploy:prod:y": "npm run deploy:prod -- --no-confirm-changeset",
